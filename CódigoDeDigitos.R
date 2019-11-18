@@ -37,8 +37,9 @@ fazSVM <- function(treino,teste,ClasseTeste){
   print(porcentagem)
 }
 
-clusteriazacao <- function(data_digitos,k){
+clusteriazacao <- function(data,k){
   clusters <- kmeans(data_digitos,k)
+  print(clusters)
 }
 
 #montagem do data frame
@@ -75,5 +76,7 @@ fazKNN(treino,teste,ClasseTreino,ClasseTeste)
 fazSVM(treino,teste,ClasseTeste)
 
 #Cluster
-fviz_nbclust(data_digitos,kmeans,method = "wss") +
-  geom_vline(xintercept = 3, linetype = 2)
+fviz_nbclust(data_digitos,kmeans,method = "wss")
+  
+N <- readline(prompt = "Numero de clusters: ")
+clusteriazacao(data_digitos,N)
