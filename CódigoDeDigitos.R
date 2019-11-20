@@ -4,6 +4,7 @@ install.packages("rpart.plot")
 install.packages("e1071")
 install.packages("FNN")
 install.packages("factoextra")
+install.packages("animation")
 
 library(tidyverse)
 library(rpart)
@@ -11,10 +12,12 @@ library(rpart.plot)
 library(e1071)
 library(FNN)
 library(factoextra)
+library(animation)
 
 #funções
 fazKNN <- function(treino,teste,ClasseTreino,classeTeste){
   K <- c(1,3,7,9)
+  ret <- NULL
   for(K in K){
     porcentagem <- 0
     Resultado <- knn(treino,teste,ClasseTreino,K)
@@ -22,8 +25,9 @@ fazKNN <- function(treino,teste,ClasseTreino,classeTeste){
       if(Resultado[i] == ClasseTeste[i])
         porcentagem <- porcentagem + 1
     porcentagem <- (porcentagem / length(ClasseTeste))*100
-    print(porcentagem)
+    ret <- c(ret,porcentagem)
   }
+  return(ret)
 }
 
 fazSVM <- function(treino,teste,ClasseTeste){
@@ -34,16 +38,27 @@ fazSVM <- function(treino,teste,ClasseTeste){
     if(pred[i] == ClasseTeste[i])
       porcentagem <- porcentagem + 1
   porcentagem <- (porcentagem / length(ClasseTeste))*100
-  print(porcentagem)
+  return (porcentagem)
+}
+
+fazrpart <- function(treino,teste,classe){
+  modelo <- rpart(formula = ident~.,treino,method = "class", control = rpart.control(minsplit = 1))
+  pred <- predict(modelo,teste, type ="class")
+  porcentagem <- 0
+  for(i in length(classe))
+    if(pred[i] == classe[i])
+      porcentagem <- porcentagem +1
+  rpart.plot(modelo,type = 3,tweak = 1.8, fallen.leaves = FALSE )
+  return ((porcentagem/length(classe))*100)
 }
 
 clusteriazacao <- function(data,k){
-  clusters <- kmeans(data_digitos,k)
-  print(clusters)
+  c <- kmeans(data,k)
+  kmeans.ani(data,3)
 }
 
 #montagem do data frame
-setwd("C:/Users/17079294.LAB-INF/Desktop/Trabalho-de-Digitios/digitos")
+setwd("C:/Users/Usuario/Desktop/Trabalho-de-Digitios/digitos")
 data_digitos <- data.frame()
 lista_arquivo <- list.files()
 identificador <- NULL
@@ -70,13 +85,20 @@ ClasseTreino <- treino[,4097]
 ClasseTeste <- teste[,4097]
 
 #KNN
-fazKNN(treino,teste,ClasseTreino,ClasseTeste)
+retorno <- fazKNN(treino,teste,ClasseTreino,ClasseTeste)
 
 #SVM
-fazSVM(treino,teste,ClasseTeste)
+retorno1 <- fazSVM(treino,teste,ClasseTeste)
+
+#Arvore de decisão
+retorno2 <- fazrpart(treino,treino,ClasseTeste)
 
 #Cluster
 fviz_nbclust(data_digitos,kmeans,method = "wss")
-  
 N <- readline(prompt = "Numero de clusters: ")
 clusteriazacao(data_digitos,N)
+kmeans.ani(data_digitos)
+
+modelo <- rpart(formula = ident~.,treino,method = "class", control = rpart.control(minsplit = 1))
+pred <- predict(modelo,teste, type ="class")
+
