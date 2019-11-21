@@ -1,3 +1,4 @@
+install.packages("ggplot2")
 install.packages("tidyverse")
 install.packages("rpart")
 install.packages("rpart.plot")
@@ -6,7 +7,9 @@ install.packages("FNN")
 install.packages("factoextra")
 install.packages("animation")
 install.packages("rgl")
+install.packages("BBmisc")
 
+library(ggplot2)
 library(tidyverse)
 library(rpart)
 library(rpart.plot)
@@ -15,6 +18,7 @@ library(FNN)
 library(factoextra)
 library(animation)
 library(rgl)
+library(BBmisc)
 
 #funções
 fazKNN <- function(treino,teste,ClasseTreino,classeTeste){
@@ -57,7 +61,7 @@ clusteriazacao <- function(data,k){
 }
 
 #montagem do data frame
-setwd("C:/Users/17079294/Desktop/Trabalho-de-Digitios/digitos")
+setwd("C:/Users/Usuario/Desktop/Trabalho-de-Digitios/digitos")
 data_digitos <- data.frame()
 lista_arquivo <- list.files()
 identificador <- NULL
@@ -97,7 +101,6 @@ acurariaRPART <- fazrpart(treino,treino,ClasseTeste)
 
 #Cluster
 fviz_nbclust(data_digitos,kmeans,method = "wss")
-N <- readline(prompt = "Numero de clusters: ")
 clusteriazacao(data_digitos,N)
 c <- kmeans(data_digitos,10)
 kmeans.ani(data_digitos)
@@ -108,19 +111,11 @@ plot3d(dadoscluster, col = dadoscluster$cluster, main = "k-means clusters")
 #PCA
 data_digitos.pca <- prcomp(data_digitos[,1:4096], center = TRUE, scale. = TRUE)
 summary(data_digitos.pca)
-dataPCA <- data_digitos[,1:1952]
-dataPCA$ident <- data_digitos$ident
+fviz_eig(data_digitos.pca)
+eig.val <- get_eigenvalue(data_digitos.pca)
+data.var <- get_pca_var(data_digitos.pca)
+data.ind <- get_pca_ind(data_digitos.pca)
 
-#separação entre treino e teste após o pca
-smp_sizePCA <- floor(0.8*nrow(dataPCA))
-train_indPCA <- sample(seq_len(nrow(dataPCA)), size = smp_sizePCA)
-treinoPCA <- dataPCA[train_indPCA,]
-testePCA <- dataPCA[-train_indPCA,]
-ClasseTreinoPCA <- treinoPCA[,1953]
-ClasseTestePCA <- teste[,1953]
+data.linhas <- predict(data_digitos.pca,data_digitos)
+data.linhas <- as.data.frame(data.linhas)
 
-acuraciaKNNPCA<- fazKNN(treinoPCA,testePCA,ClasseTreinoPCA,ClasseTreinoPCA)
-
-print(acuraciaKNN-acuraciaKNNPCA)
-
-acuraciaSVMPCA <- fazSVM(treinoPCA,testePCA,ClasseTestePCA)
