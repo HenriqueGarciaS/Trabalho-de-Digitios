@@ -20,6 +20,8 @@ library(animation)
 library(rgl)
 library(BBmisc)
 
+set.seed(123)
+
 #funções
 fazKNN <- function(treino,teste,ClasseTreino,classeTeste){
   K <- c(1,3,7,9)
@@ -109,13 +111,43 @@ dadoscluster$cluster <- c$cluster
 plot3d(dadoscluster, col = dadoscluster$cluster, main = "k-means clusters")
 
 #PCA
+#data.linhas <- predict(data_digitos.pca,data_digitos)
 data_digitos.pca <- prcomp(data_digitos[,1:4096], center = TRUE, scale. = TRUE)
 summary(data_digitos.pca)
 fviz_eig(data_digitos.pca)
 eig.val <- get_eigenvalue(data_digitos.pca)
-data.var <- get_pca_var(data_digitos.pca)
-data.ind <- get_pca_ind(data_digitos.pca)
 
-data.linhas <- predict(data_digitos.pca,data_digitos)
+
+# data frame dos principais componentes
+data.linhas <- data_digitos.pca$x
+pcs <- which(eig.val$cumulative.variance.percent > 90)
+data.linhas <- data.linhas[,1:pcs[1]]
 data.linhas <- as.data.frame(data.linhas)
+data.linhas$ident <- data_digitos$ident 
 
+
+smp_sizePCA <- floor(0.8*nrow(data.linhas))
+train_indPCA <- sample(seq_len(nrow(data.linhas)), size = smp_size)
+treinoPCA <- data.linhas[train_indPCA,]
+testePCA <- data.linhas[-train_indPCA,]
+ClasseTreinoPCA <- treinoPCA[,499]
+ClasseTestePCA <- testePCA[,499]
+
+#KNN após PCA
+acuraciaKNNPCA <- fazKNN(treinoPCA,testePCA,ClasseTreinoPCA,ClasseTestePCA)
+
+#SVM após PCA
+acuraciaSVMPCA <- fazSVM(treinoPCA,testePCA,ClasseTestePCA)
+
+#Arvore de decisão após PCA
+modelo <- rpart(formula = ident~.,treinoPCA,method = "class", control = rpart.control(minsplit = 1))
+pred <- predict(modelo,testePCA,type = "class")
+acuraciaRPARTPCA <- length(which(pred == ClasseTestePCA))/length(ClasseTestePCA)*100
+
+#Cluster dos principais componentes
+fviz_nbclust(data.linhas,kmeans,method = "wss")
+c <- kmeans(data.linhas,10)
+kmeans.ani(data.linhas)
+dadosclusterPCA <- data.linhas
+dadosclusterPCA$cluster <- c$cluster
+plot3d(dadosclusterPCA, col = dadosclusterPCA$cluster, main = "k-means clusters")
