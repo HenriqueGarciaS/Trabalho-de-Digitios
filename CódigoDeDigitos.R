@@ -20,7 +20,7 @@ library(animation)
 library(rgl)
 library(BBmisc)
 
-set.seed(123)
+
 
 #funções
 fazKNN <- function(treino,teste,ClasseTreino,classeTeste){
@@ -61,6 +61,8 @@ clusteriazacao <- function(data,k){
   c <- kmeans(data,k)
   plot(c)
 }
+
+
 
 #montagem do data frame
 setwd("C:/Users/Usuario/Desktop/Trabalho-de-Digitios/digitos")
@@ -120,12 +122,53 @@ eig.val <- get_eigenvalue(data_digitos.pca)
 
 # data frame dos principais componentes
 data.linhas <- data_digitos.pca$x
-pcs <- which(eig.val$cumulative.variance.percent > 90)
-data.linhas <- data.linhas[,1:pcs[1]]
 data.linhas <- as.data.frame(data.linhas)
-data.linhas$ident <- data_digitos$ident 
+pcs[1:198]
+pcs <- which(eig.val$cumulative.variance.percent > 90)
+data.linhas <- data.linhas[,-pcs[2:length(pcs)]]
+data.linhas <- as.data.frame(data.linhas)
 
 
+#data frame das variaveis principais
+data_principal <- data.frame()
+
+variaveis_principais <- NULL
+for(i in length(data.linhas)){
+    variaveis_principais <-which(data.linhas[i,] < 0)
+    data_principal <- data_digitos[,-variaveis_principais]
+}
+
+
+#Separação entre dados de teste e treino
+smp_sizePrincipal <- floor(0.8*nrow(data_principal))
+train_indPrincipal <- sample(seq_len(nrow(data_principal)), size = smp_sizePrincipal)
+treinoPrincipal <- data_principal[train_indPrincipal,]
+testePrincipal <- data_principal[-train_indPrincipal,]
+ClasseTreinoPrincipal <- treinoPrincipal[,length(treinoPrincipal)]
+ClasseTestePrincipal <- testePrincipal[,length(testePrincipal)]
+
+#KNN das principais variaveis
+acuraciaPrincipalKNN <- fazKNN(treinoPrincipal,testePrincipal,ClasseTreinoPrincipal,ClasseTestePrincipal)
+
+#SVM das principais variaveis
+acuraciaPrincipalSVM <- fazSVM(treinoPrincipal,testePrincipal,ClasseTestePrincipal)
+
+#Arvore de decisão das variaveis principal
+modeloPrincipal <- rpart(formula = ident~.,treinoPrincipal,method = "class", control = rpart.control(minsplit = 1))
+predPrincipal <- predict(modeloPrincipal,testePrincipal,type = "class")
+acuraciaRPART <- length(which(pred == ClasseTestePrincipal))/length(ClasseTestePrincipal)*100
+acurariaRPART <- fazrpart(treinoPrincipal,treinoPrincipal,ClasseTestePrincipal)
+
+#cluster das variaveis principal
+fviz_nbclust(data_principal,kmeans,method = "wss")
+c <- kmeans(data_principal,10)
+kmeans.ani(data_principal)
+dadosclusterPrincipal <- data_principal
+dadosclusterPrincipal$cluster <- c$cluster
+plot3d(dadosclusterPrincipal, col = dadosclusterPrincipal$cluster, main = "k-means clusters")
+
+
+#Separação dos principais componentes
 smp_sizePCA <- floor(0.8*nrow(data.linhas))
 train_indPCA <- sample(seq_len(nrow(data.linhas)), size = smp_size)
 treinoPCA <- data.linhas[train_indPCA,]
